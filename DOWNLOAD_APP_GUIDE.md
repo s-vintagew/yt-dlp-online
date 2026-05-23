@@ -1,6 +1,6 @@
-# TubeFlow: Development Guide & Reference
+# DownWizard: Development Guide & Reference
 
-This guide provides deep technical insights, security considerations, and detailed code mappings for **TubeFlow**, a secure full-stack media downloader.
+This guide provides deep technical insights, security considerations, and detailed code mappings for **DownWizard**, a secure full-stack media downloader.
 
 ---
 
