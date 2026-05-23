@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Download YouTube videos and audio files quickly and securely. Supports MP4 video and MP3 audio downloads.">
+    <title>TubeFlow - Premium YouTube Downloader</title>
+    <!-- Google Fonts: Outfit and Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+    <!-- Background glowing shapes for ambient atmosphere -->
+    <div class="glow-bg">
+        <div class="glow-circle glow-1"></div>
+        <div class="glow-circle glow-2"></div>
+    </div>
+
+    <main class="container">
+        <div class="card" id="downloader-card">
+            <header class="header">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download-cloud"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
+                    </div>
+                    <h1>TubeFlow</h1>
+                </div>
+                <p class="subtitle">High-speed media converter & downloader</p>
+            </header>
+
+            <form id="download-form" class="download-form" novalidate>
+                <div class="input-group">
+                    <label for="youtube-url">YouTube Video URL</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                        </span>
+                        <input 
+                            type="url" 
+                            id="youtube-url" 
+                            placeholder="https://www.youtube.com/watch?v=..." 
+                            required 
+                            autocomplete="off"
+                        >
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="format-select">Conversion Format</label>
+                    <div class="select-wrapper">
+                        <span class="select-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sliders"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+                        </span>
+                        <select id="format-select" required>
+                            <option value="mp4" selected>Video (MP4 format)</option>
+                            <option value="mp3">Audio (MP3 format)</option>
+                        </select>
+                        <span class="select-chevron">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </span>
+                    </div>
+                </div>
+
+                <button type="submit" id="download-btn" class="download-btn">
+                    <span class="btn-text">Generate Download Link</span>
+                    <span class="btn-loader hidden">
+                        <span class="spinner"></span>
+                    </span>
+                </button>
+            </form>
+
+            <div id="status-container" class="status-container hidden">
+                <div class="status-card">
+                    <div class="status-indicator" id="status-indicator"></div>
+                    <div class="status-content">
+                        <h3 id="status-title">Ready</h3>
+                        <p id="status-message">Enter a link to begin.</p>
+                    </div>
+                </div>
+                <!-- Animated linear progress loader -->
+                <div id="progress-bar-container" class="progress-bar-container hidden">
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill animate-progress"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 TubeFlow. Powered securely by Node.js & yt-dlp.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

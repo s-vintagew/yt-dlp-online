@@ -1,0 +1,24 @@
+{
+  "name": "yt-dlp-online",
+  "version": "1.0.0",
+  "description": "Download your favourite youtube videos efficiently powered by yt-dlp",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/s-vintagew/yt-dlp-online.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/s-vintagew/yt-dlp-online/issues"
+  },
+  "homepage": "https://github.com/s-vintagew/yt-dlp-online#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
