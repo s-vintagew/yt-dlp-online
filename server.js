@@ -42,7 +42,7 @@ function isValidUrl(string) {
 
 // POST endpoint at /download
 app.post('/download', async (req, res) => {
-    const { url, format } = req.body;
+    const { url, format, quality } = req.body;
 
     // 1. Validation
     if (!url || typeof url !== 'string') {
@@ -53,61 +53,118 @@ app.post('/download', async (req, res) => {
         return res.status(400).json({ error: 'Invalid or unsafe URL format provided.' });
     }
 
-    if (format !== 'mp4' && format !== 'mp3') {
-        return res.status(400).json({ error: 'Format must be either "mp4" or "mp3".' });
+    const validFormats = ['mp4', 'mp3', 'playlist-mp4', 'playlist-mp3'];
+    if (!validFormats.includes(format)) {
+        return res.status(400).json({ error: 'Format must be one of: mp4, mp3, playlist-mp4, playlist-mp3.' });
     }
 
-    console.log(`[INFO] Received request - Format: ${format}, URL: ${url}`);
+    console.log(`[INFO] Received request - Format: ${format}, Quality: ${quality || 'N/A'}, URL: ${url}`);
 
-    // Create a secure, unique identifier on disk to avoid conflicts
+    // Create unique identifiers
     const tempId = `download_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    const finalFilePath = path.join(downloadsDir, `${tempId}.${format}`);
+    const extension = format.startsWith('playlist-') ? 'zip' : format;
+    const finalFilePath = path.join(downloadsDir, `${tempId}.${extension}`);
+    const playlistDir = path.join(downloadsDir, tempId);
 
     try {
-        // 2. Fetch the video title securely in parallel/ahead to provide a clean name to client
-        let videoTitle = 'youtube_video';
-        try {
-            console.log('[INFO] Fetching video title...');
-            const { stdout } = await execPromise(`yt-dlp --get-title "${url}"`);
-            if (stdout && stdout.trim()) {
-                // Remove filesystem-unfriendly characters and restrict spaces/special symbols to underscores
-                videoTitle = stdout.trim().replace(/[/\\?%*:|"<>\s]+/g, '_');
+        let downloadName = 'media';
+        
+        // 2. Query Title (Video title for single, Playlist title for playlist)
+        if (format.startsWith('playlist-')) {
+            let playlistTitle = 'youtube_playlist';
+            try {
+                console.log('[INFO] Fetching playlist title...');
+                // Fast execution using flat-playlist and end range limit
+                const { stdout } = await execPromise(`yt-dlp --flat-playlist --playlist-end 1 --print playlist_title "${url}"`);
+                if (stdout && stdout.trim()) {
+                    playlistTitle = stdout.trim().replace(/[/\\?%*:|"<>\s]+/g, '_');
+                }
+            } catch (err) {
+                console.warn('[WARN] Failed to fetch playlist title, using default:', err.message);
             }
-        } catch (titleError) {
-            console.warn('[WARN] Failed to fetch video title, using fallback name:', titleError.message);
+            downloadName = `${playlistTitle}.zip`;
+        } else {
+            let videoTitle = 'youtube_video';
+            try {
+                console.log('[INFO] Fetching video title...');
+                const { stdout } = await execPromise(`yt-dlp --get-title "${url}"`);
+                if (stdout && stdout.trim()) {
+                    videoTitle = stdout.trim().replace(/[/\\?%*:|"<>\s]+/g, '_');
+                }
+            } catch (titleError) {
+                console.warn('[WARN] Failed to fetch video title, using default:', titleError.message);
+            }
+            downloadName = `${videoTitle}.${format}`;
         }
 
-        // 3. Define commands exactly as specified
+        // 3. Configure MP4 Quality Formatting
+        let formatSelector = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]';
+        if (format === 'mp4' || format === 'playlist-mp4') {
+            const validQualities = ['best', '720', '480', '360'];
+            const chosenQuality = validQualities.includes(quality) ? quality : 'best';
+
+            if (chosenQuality === '720') {
+                formatSelector = 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]';
+            } else if (chosenQuality === '480') {
+                formatSelector = 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480][ext=mp4]';
+            } else if (chosenQuality === '360') {
+                formatSelector = 'bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]';
+            }
+        }
+
+        // 4. Construct Command Line execution structures
         let ytDlpCommand = '';
-        if (format === 'mp3') {
-            // For MP3: yt-dlp -x --audio-format mp3 -o "<filename>.mp3" "<url>"
-            ytDlpCommand = `yt-dlp -x --audio-format mp3 -o "${finalFilePath}" "${url}"`;
+        if (format.startsWith('playlist-')) {
+            // Ensure temp directory is created for storing separate elements
+            fs.mkdirSync(playlistDir, { recursive: true });
+
+            if (format === 'playlist-mp3') {
+                ytDlpCommand = `yt-dlp --yes-playlist -x --audio-format mp3 -o "${playlistDir}/%(title)s.%(ext)s" "${url}"`;
+            } else {
+                ytDlpCommand = `yt-dlp --yes-playlist -f "${formatSelector}" -o "${playlistDir}/%(title)s.%(ext)s" "${url}"`;
+            }
         } else {
-            // For MP4: yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" -o "<filename>.mp4" "<url>"
-            ytDlpCommand = `yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" -o "${finalFilePath}" "${url}"`;
+            if (format === 'mp3') {
+                ytDlpCommand = `yt-dlp --no-playlist -x --audio-format mp3 -o "${finalFilePath}" "${url}"`;
+            } else {
+                ytDlpCommand = `yt-dlp --no-playlist -f "${formatSelector}" -o "${finalFilePath}" "${url}"`;
+            }
         }
 
         console.log(`[INFO] Executing download command: ${ytDlpCommand}`);
 
-        // 4. Execute yt-dlp securely in the background using child_process.exec
+        // 5. Run yt-dlp
         await execPromise(ytDlpCommand);
 
-        // 5. Verify the file exists on the hard drive
-        if (!fs.existsSync(finalFilePath)) {
-            throw new Error(`Downloaded file was not created or found at: ${finalFilePath}`);
+        // 6. Handle playlist post-processing (zipping the contents folder)
+        if (format.startsWith('playlist-')) {
+            const downloadedFiles = fs.readdirSync(playlistDir);
+            if (downloadedFiles.length === 0) {
+                throw new Error('No playlist files were successfully downloaded.');
+            }
+
+            console.log(`[INFO] Zipping playlist directory containing ${downloadedFiles.length} files...`);
+            // Run native zip compressing flattening subdirectories via junk-paths (-j)
+            await execPromise(`zip -j -r "${finalFilePath}" "${playlistDir}"`);
+
+            // Clean up temporary subfolder immediately
+            fs.rmSync(playlistDir, { recursive: true, force: true });
         }
 
-        const downloadName = `${videoTitle}.${format}`;
-        console.log(`[SUCCESS] File downloaded: ${downloadName}. Sending to client...`);
+        // 7. Verify the final file exists (either media or zip)
+        if (!fs.existsSync(finalFilePath)) {
+            throw new Error(`Downloaded output file was not found at: ${finalFilePath}`);
+        }
 
-        // 6. Send the downloaded file back to the client using res.download()
+        console.log(`[SUCCESS] File prepared: ${downloadName}. Sending to client...`);
+
+        // 8. Stream the file using res.download() and purge on completion
         res.download(finalFilePath, downloadName, (downloadErr) => {
-            // 7. Once successfully sent or failed, immediately delete the file to save server space
             fs.unlink(finalFilePath, (unlinkErr) => {
                 if (unlinkErr) {
                     console.error(`[ERROR] Failed to delete temporary file ${finalFilePath}:`, unlinkErr);
                 } else {
-                    console.log(`[INFO] Successfully cleaned up temporary file from server: ${finalFilePath}`);
+                    console.log(`[INFO] Successfully cleaned up temporary file: ${finalFilePath}`);
                 }
             });
 
@@ -119,15 +176,15 @@ app.post('/download', async (req, res) => {
     } catch (error) {
         console.error('[ERROR] Processing failed:', error);
         
-        // Return 500 error payload
-        res.status(500).json({ error: 'An error occurred during downloading or processing the video.' });
-
-        // Cleanup file if it exists but error occurred before res.download
-        if (fs.existsSync(finalFilePath)) {
-            fs.unlink(finalFilePath, (err) => {
-                if (!err) console.log(`[INFO] Cleaned up file on error: ${finalFilePath}`);
-            });
+        // Clean up any remaining directories/files
+        if (fs.existsSync(playlistDir)) {
+            fs.rmSync(playlistDir, { recursive: true, force: true });
         }
+        if (fs.existsSync(finalFilePath)) {
+            fs.unlink(finalFilePath, (err) => {});
+        }
+
+        res.status(500).json({ error: 'An error occurred during downloading or converting the media.' });
     }
 });
 
