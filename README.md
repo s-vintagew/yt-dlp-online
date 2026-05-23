@@ -1,6 +1,6 @@
-# ⚡ TubeFlow — Premium Minimal YouTube Downloader
+# ⚡ DownWizard — Premium Minimal YouTube Downloader
 
-**TubeFlow** is a lightweight, responsive, and secure full-stack web application that allows users to seamlessly download YouTube videos in high-quality **MP4** or **MP3** formats. Powered by a self-cleaning Node.js + Express backend and dynamic `yt-dlp` scripts.
+**DownWizard** is a lightweight, responsive, and secure full-stack web application that allows users to seamlessly download YouTube videos in high-quality **MP4** or **MP3** formats. Powered by a self-cleaning Node.js + Express backend and dynamic `yt-dlp` scripts.
 
 ---
 
