@@ -8,6 +8,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusTitle = document.getElementById('status-title');
     const statusMessage = document.getElementById('status-message');
     const progressBarContainer = document.getElementById('progress-bar-container');
+    const qualityGroup = document.getElementById('quality-group');
+    const qualitySelect = document.getElementById('quality-select');
+
+    // Toggle quality selector visibility based on chosen format
+    function toggleQualitySelector() {
+        const format = formatSelect.value;
+        if (format === 'mp4' || format === 'playlist-mp4') {
+            qualityGroup.classList.remove('hidden');
+        } else {
+            qualityGroup.classList.add('hidden');
+        }
+    }
+
+    formatSelect.addEventListener('change', toggleQualitySelector);
+    // Trigger initially to align with default state (mp4 active)
+    toggleQualitySelector();
 
     // Utility function to validate URL format in frontend
     function isValidHttpUrl(string) {
@@ -70,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const urlValue = youtubeUrlInput.value.trim();
         const formatValue = formatSelect.value;
+        const qualityValue = qualitySelect.value;
 
         // 1. Basic frontend validation
         if (!urlValue) {
@@ -100,7 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({
                     url: urlValue,
-                    format: formatValue
+                    format: formatValue,
+                    quality: (formatValue === 'mp4' || formatValue === 'playlist-mp4') ? qualityValue : undefined
                 })
             });
 
